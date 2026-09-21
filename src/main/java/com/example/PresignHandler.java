@@ -15,11 +15,23 @@ public class PresignHandler implements RequestHandler<Map<String, Object>, Strin
     @Override
     public String handleRequest(Map<String, Object> event, Context context) {
         // Implement your logic to generate a presigned URL here
-        return createPresignedUrl(BUCKET_NAME, "rensuke/test.jpg");
+        @SuppressWarnings("unchecked")
+        Map<String, String> headers = (Map<String, String>) event.get("headers");
+        
+        if (headers == null) {
+            return "Process is Error!";
+        }
+
+        if (API_SECRET.equals(headers.get("x-api-key"))) {
+            return createPresignedUrl(BUCKET_NAME, "rensuke/test.jpg");
+        } else {
+            return "Process is Error!";
+        }
     }
 
     private static final S3Presigner PRESIGNER = S3Presigner.create();
     private static final String BUCKET_NAME = System.getenv("BUCKET_NAME");
+    private static final String API_SECRET = System.getenv("API_SECRET");
 
     /* Create a presigned URL to use in a subsequent PUT request */
     public String createPresignedUrl(String bucketName, String keyName) {
@@ -27,7 +39,6 @@ public class PresignHandler implements RequestHandler<Map<String, Object>, Strin
                 .bucket(bucketName)
                 .key(keyName)
                 .build();
-                
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(10)) // The URL expires in 10 minutes.
@@ -40,7 +51,6 @@ public class PresignHandler implements RequestHandler<Map<String, Object>, Strin
         System.out.println("Presigned URL to upload a file to: " + myURL);
         System.out.println("HTTP method: " + presignedRequest.httpRequest().method());
 
-        return presignedRequest.url().toExternalForm();
+        return presignedRequest.url().toString();
     }
-
 }
