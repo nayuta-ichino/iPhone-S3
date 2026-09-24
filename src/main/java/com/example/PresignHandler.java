@@ -1,7 +1,10 @@
 package com.example;
 
-import java.util.Map;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -17,21 +20,36 @@ public class PresignHandler implements RequestHandler<Map<String, Object>, Strin
         // Implement your logic to generate a presigned URL here
         @SuppressWarnings("unchecked")
         Map<String, String> headers = (Map<String, String>) event.get("headers");
-        
-        if (headers == null) {
+
+        if (headers == null || !API_SECRET.equals(headers.get("x-api-key"))) {
             return "Process is Error!";
         }
 
-        if (API_SECRET.equals(headers.get("x-api-key"))) {
-            return createPresignedUrl(BUCKET_NAME, "rensuke/test.jpg");
-        } else {
-            return "Process is Error!";
+        String createDate = headers.get("create-date");
+        if (createDate == null || !KEY_DATE.matcher(createDate).matches()) {
+            return "Process is Error! \n create-date is cause!";
         }
+
+        String fileExt = headers.get("file-ext");
+        if (fileExt == null) {
+            return "Process is Error! \n file-ext is cause!";
+        }
+        fileExt = fileExt.toLowerCase(Locale.ROOT);
+        if (!ALLOWED_EXT.contains(fileExt)) {
+            return "Process is Error! \n file-ext is cause!";
+        }
+
+        String key = "rensuke/" + createDate.substring(0, 4) + "/" + createDate.substring(4, 6) + "/" + createDate + "."
+                + fileExt;
+
+        return createPresignedUrl(BUCKET_NAME, key);
     }
 
     private static final S3Presigner PRESIGNER = S3Presigner.create();
     private static final String BUCKET_NAME = System.getenv("BUCKET_NAME");
     private static final String API_SECRET = System.getenv("API_SECRET");
+    private static final Pattern KEY_DATE = Pattern.compile("^\\d{8}_\\d{6}$");
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "heic", "mov", "mp4");
 
     /* Create a presigned URL to use in a subsequent PUT request */
     public String createPresignedUrl(String bucketName, String keyName) {
