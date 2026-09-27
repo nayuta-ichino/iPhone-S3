@@ -49,7 +49,7 @@ public class PresignHandler implements RequestHandler<Map<String, Object>, Strin
     private static final String BUCKET_NAME = System.getenv("BUCKET_NAME");
     private static final String API_SECRET = System.getenv("API_SECRET");
     private static final Pattern KEY_DATE = Pattern.compile("^\\d{8}_\\d{6}$");
-    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "heic", "mov", "mp4");
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "heic");
 
     /* Create a presigned URL to use in a subsequent PUT request */
     public String createPresignedUrl(String bucketName, String keyName) {
